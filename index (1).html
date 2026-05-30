@@ -1,0 +1,1086 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>База заказов - Менеджер</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --bg-primary: #0a0a0f;
+            --bg-secondary: #13131a;
+            --bg-tertiary: #1a1a24;
+            --bg-card: #1f1f2e;
+            --border-color: #2a2a3a;
+            --text-primary: #e4e4e7;
+            --text-secondary: #a1a1aa;
+            --accent-primary: #6366f1;
+            --accent-secondary: #8b5cf6;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+            --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3), 0 2px 4px -1px rgba(0, 0, 0, 0.2);
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            min-height: 100vh;
+            background-image: 
+                radial-gradient(at 20% 30%, rgba(99, 102, 241, 0.1) 0px, transparent 50%),
+                radial-gradient(at 80% 70%, rgba(139, 92, 246, 0.1) 0px, transparent 50%);
+        }
+
+        .auth-container {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .auth-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            padding: 40px;
+            width: 100%;
+            max-width: 420px;
+            box-shadow: var(--shadow);
+        }
+
+        .auth-title {
+            font-size: 28px;
+            font-weight: 700;
+            margin-bottom: 8px;
+            background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .auth-subtitle {
+            color: var(--text-secondary);
+            margin-bottom: 32px;
+            font-size: 14px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-label {
+            display: block;
+            margin-bottom: 8px;
+            font-size: 14px;
+            font-weight: 500;
+            color: var(--text-secondary);
+        }
+
+        .form-input {
+            width: 100%;
+            padding: 12px 16px;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            color: var(--text-primary);
+            font-size: 14px;
+            transition: all 0.2s;
+        }
+
+        .form-input:focus {
+            outline: none;
+            border-color: var(--accent-primary);
+            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+        }
+
+        .btn {
+            width: 100%;
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 8px 16px -4px rgba(99, 102, 241, 0.4);
+        }
+
+        .btn-secondary {
+            background: var(--bg-tertiary);
+            color: var(--text-primary);
+            border: 1px solid var(--border-color);
+        }
+
+        .btn-secondary:hover {
+            background: var(--border-color);
+        }
+
+        .btn-danger {
+            background: var(--danger);
+            color: white;
+        }
+
+        .btn-danger:hover {
+            background: #dc2626;
+        }
+
+        .btn-sm {
+            width: auto;
+            padding: 8px 16px;
+            font-size: 13px;
+        }
+
+        .auth-toggle {
+            text-align: center;
+            margin-top: 20px;
+            color: var(--text-secondary);
+            font-size: 14px;
+        }
+
+        .auth-toggle-button {
+            background: none;
+            border: none;
+            color: var(--accent-primary);
+            font-size: 14px;
+            cursor: pointer;
+            font-weight: 600;
+            padding: 0;
+            text-decoration: none;
+        }
+
+        .auth-toggle-button:hover {
+            text-decoration: underline;
+        }
+
+        .app-container {
+            display: none;
+            min-height: 100vh;
+        }
+
+        .header {
+            background: var(--bg-secondary);
+            border-bottom: 1px solid var(--border-color);
+            padding: 16px 32px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .header-title {
+            font-size: 20px;
+            font-weight: 700;
+            background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .header-user {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .user-info {
+            color: var(--text-secondary);
+            font-size: 14px;
+        }
+
+        .user-login {
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        .main-content {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 32px;
+        }
+
+        .content-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 32px;
+        }
+
+        .content-title {
+            font-size: 24px;
+            font-weight: 700;
+        }
+
+        .orders-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(380px, 1fr));
+            gap: 20px;
+        }
+
+        .order-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 24px;
+            transition: all 0.2s;
+        }
+
+        .order-card:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow);
+            border-color: var(--accent-primary);
+        }
+
+        .order-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 16px;
+        }
+
+        .order-number {
+            font-size: 18px;
+            font-weight: 700;
+            color: var(--accent-primary);
+        }
+
+        .order-status {
+            padding: 6px 12px;
+            border-radius: 6px;
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .status-contacted {
+            background: rgba(16, 185, 129, 0.2);
+            color: var(--success);
+        }
+
+        .status-not-contacted {
+            background: rgba(245, 158, 11, 0.2);
+            color: var(--warning);
+        }
+
+        .order-details {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+
+        .order-detail {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 14px;
+        }
+
+        .order-detail-label {
+            color: var(--text-secondary);
+        }
+
+        .order-detail-value {
+            color: var(--text-primary);
+            font-weight: 500;
+        }
+
+        .order-actions {
+            display: flex;
+            gap: 8px;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 80px 20px;
+            color: var(--text-secondary);
+        }
+
+        .empty-state-icon {
+            font-size: 64px;
+            margin-bottom: 16px;
+            opacity: 0.5;
+        }
+
+        .empty-state-text {
+            font-size: 18px;
+            margin-bottom: 8px;
+        }
+
+        .empty-state-subtext {
+            font-size: 14px;
+        }
+
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.7);
+            backdrop-filter: blur(4px);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .modal-overlay.active {
+            display: flex;
+        }
+
+        .modal {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            padding: 32px;
+            width: 100%;
+            max-width: 500px;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 24px;
+        }
+
+        .modal-title {
+            font-size: 20px;
+            font-weight: 700;
+        }
+
+        .modal-close {
+            background: none;
+            border: none;
+            color: var(--text-secondary);
+            font-size: 24px;
+            cursor: pointer;
+            padding: 0;
+            width: 32px;
+            height: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 6px;
+            transition: all 0.2s;
+        }
+
+        .modal-close:hover {
+            background: var(--bg-tertiary);
+            color: var(--text-primary);
+        }
+
+        .toast-container {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 2000;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .toast {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 16px 20px;
+            min-width: 300px;
+            box-shadow: var(--shadow);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            animation: slideIn 0.3s ease-out;
+        }
+
+        @keyframes slideIn {
+            from {
+                transform: translateX(400px);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+
+        .toast-success { border-left: 4px solid var(--success); }
+        .toast-error { border-left: 4px solid var(--danger); }
+        .toast-warning { border-left: 4px solid var(--warning); }
+
+        .toast-icon { font-size: 20px; }
+        .toast-message { flex: 1; font-size: 14px; }
+
+        .filters {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 24px;
+            flex-wrap: wrap;
+        }
+
+        .filter-btn {
+            padding: 8px 16px;
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            color: var(--text-secondary);
+            font-size: 13px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .filter-btn:hover {
+            background: var(--bg-tertiary);
+            color: var(--text-primary);
+        }
+
+        .filter-btn.active {
+            background: var(--accent-primary);
+            color: white;
+            border-color: var(--accent-primary);
+        }
+
+        .loading {
+            display: inline-block;
+            width: 16px;
+            height: 16px;
+            border: 2px solid var(--border-color);
+            border-top-color: var(--accent-primary);
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        @media (max-width: 768px) {
+            .header { padding: 12px 16px; }
+            .main-content { padding: 20px 16px; }
+            .orders-grid { grid-template-columns: 1fr; }
+            .content-header { flex-direction: column; align-items: flex-start; gap: 16px; }
+        }
+
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar-track { background: var(--bg-secondary); }
+        ::-webkit-scrollbar-thumb { background: var(--border-color); border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: var(--accent-primary); }
+
+        .form-hidden { display: none; }
+        .form-visible { display: block; }
+    </style>
+</head>
+<body>
+    <div class="toast-container" id="toastContainer"></div>
+
+    <div class="auth-container" id="authContainer">
+        <div class="auth-card">
+            <h1 class="auth-title" id="authTitle">Вход в систему</h1>
+            <p class="auth-subtitle" id="authSubtitle">Введите свои данные для входа</p>
+
+            <form id="loginForm" class="form-visible">
+                <div class="form-group">
+                    <label class="form-label">Логин</label>
+                    <input type="text" class="form-input" id="loginUsername" required autocomplete="username">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Пароль</label>
+                    <input type="password" class="form-input" id="loginPassword" required autocomplete="current-password">
+                </div>
+                <button type="submit" class="btn btn-primary">
+                    <span>Войти</span>
+                </button>
+            </form>
+
+            <form id="registerForm" class="form-hidden">
+                <div class="form-group">
+                    <label class="form-label">Логин</label>
+                    <input type="text" class="form-input" id="registerUsername" required autocomplete="username">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Пароль</label>
+                    <input type="password" class="form-input" id="registerPassword" required autocomplete="new-password">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Подтверждение пароля</label>
+                    <input type="password" class="form-input" id="registerPasswordConfirm" required autocomplete="new-password">
+                </div>
+                <button type="submit" class="btn btn-primary">
+                    <span>Зарегистрироваться</span>
+                </button>
+            </form>
+
+            <div class="auth-toggle">
+                <span id="authToggleText">Нет аккаунта?</span>
+                <button type="button" class="auth-toggle-button" id="authToggleLink">Зарегистрироваться</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="app-container" id="appContainer">
+        <header class="header">
+            <h1 class="header-title">📦 База заказов</h1>
+            <div class="header-user">
+                <div class="user-info">
+                    <span>Добро пожаловать, </span>
+                    <span class="user-login" id="userLogin"></span>
+                </div>
+                <button class="btn btn-secondary btn-sm" id="logoutBtn">Выйти</button>
+            </div>
+        </header>
+
+        <main class="main-content">
+            <div class="content-header">
+                <h2 class="content-title">Мои заказы</h2>
+                <button class="btn btn-primary btn-sm" id="createOrderBtn">
+                    + Создать заказ
+                </button>
+            </div>
+
+            <div class="filters">
+                <button class="filter-btn active" data-filter="all">Все заказы</button>
+                <button class="filter-btn" data-filter="not_contacted">Не связался</button>
+                <button class="filter-btn" data-filter="contacted">Связался</button>
+            </div>
+
+            <div class="orders-grid" id="ordersGrid">
+                <div class="empty-state">
+                    <div class="empty-state-icon">📦</div>
+                    <div class="empty-state-text">Заказов пока нет</div>
+                    <div class="empty-state-subtext">Создайте свой первый заказ</div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <div class="modal-overlay" id="orderModal">
+        <div class="modal">
+            <div class="modal-header">
+                <h2 class="modal-title" id="orderModalTitle">Создать заказ</h2>
+                <button class="modal-close" id="closeModalBtn">×</button>
+            </div>
+            <form id="orderForm">
+                <input type="hidden" id="orderId">
+                <div class="form-group">
+                    <label class="form-label">Номер заказа *</label>
+                    <input type="text" class="form-input" id="orderNumber" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Имя клиента *</label>
+                    <input type="text" class="form-input" id="clientName" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Телефон клиента</label>
+                    <input type="tel" class="form-input" id="clientPhone">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Дата поставки</label>
+                    <input type="date" class="form-input" id="deliveryDate">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Статус</label>
+                    <select class="form-input" id="orderStatus">
+                        <option value="not_contacted">Не связался с клиентом</option>
+                        <option value="contacted">Связался с клиентом</option>
+                    </select>
+                </div>
+                <button type="submit" class="btn btn-primary">
+                    <span id="orderSubmitText">Создать заказ</span>
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        const SUPABASE_URL = 'https://ryxwtrfvnjscbeglmazz.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJ5eHd0cmZ2bmpzY2JlZ2xtYXp6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAwOTgxMTUsImV4cCI6MjA5NTY3NDExNX0.VkFk-u0vHxHZ0Mly4KH7bZzBX2wRqGw3VTl0UdaVCv4';
+        const EMAIL_DOMAIN = '@manager.internal';
+
+        // Используем деструктуризацию, чтобы избежать конфликта имён
+        const { createClient } = window.supabase;
+        const sb = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+        let currentUser = null;
+        let currentManager = null;
+        let orders = [];
+        let currentFilter = 'all';
+        let isLoginMode = true;
+
+        // ===== ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ =====
+
+        function showToast(message, type = 'success') {
+            const container = document.getElementById('toastContainer');
+            const toast = document.createElement('div');
+            toast.className = `toast toast-${type}`;
+            
+            const icons = { success: '✓', error: '✕', warning: '⚠' };
+
+            toast.innerHTML = `
+                <span class="toast-icon">${icons[type]}</span>
+                <span class="toast-message">${message}</span>
+            `;
+
+            container.appendChild(toast);
+
+            setTimeout(() => {
+                toast.style.animation = 'slideIn 0.3s ease-out reverse';
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
+        }
+
+        function showLoading(button, loading = true, originalText = '') {
+            if (loading) {
+                button.disabled = true;
+                button.innerHTML = '<span class="loading"></span><span>Загрузка...</span>';
+            } else {
+                button.disabled = false;
+                button.innerHTML = `<span>${originalText}</span>`;
+            }
+        }
+
+        // ===== АУТЕНТИФИКАЦИЯ =====
+
+        function toggleAuthMode() {
+            const loginForm = document.getElementById('loginForm');
+            const registerForm = document.getElementById('registerForm');
+            const authTitle = document.getElementById('authTitle');
+            const authSubtitle = document.getElementById('authSubtitle');
+            const authToggleText = document.getElementById('authToggleText');
+            const authToggleLink = document.getElementById('authToggleLink');
+
+            if (isLoginMode) {
+                loginForm.classList.remove('form-visible');
+                loginForm.classList.add('form-hidden');
+                registerForm.classList.remove('form-hidden');
+                registerForm.classList.add('form-visible');
+                
+                authTitle.textContent = 'Регистрация';
+                authSubtitle.textContent = 'Создайте аккаунт для доступа';
+                authToggleText.textContent = 'Уже есть аккаунт?';
+                authToggleLink.textContent = 'Войти';
+                
+                isLoginMode = false;
+            } else {
+                registerForm.classList.remove('form-visible');
+                registerForm.classList.add('form-hidden');
+                loginForm.classList.remove('form-hidden');
+                loginForm.classList.add('form-visible');
+                
+                authTitle.textContent = 'Вход в систему';
+                authSubtitle.textContent = 'Введите свои данные для входа';
+                authToggleText.textContent = 'Нет аккаунта?';
+                authToggleLink.textContent = 'Зарегистрироваться';
+                
+                isLoginMode = true;
+            }
+        }
+
+        async function login(e) {
+            e.preventDefault();
+            const username = document.getElementById('loginUsername').value.trim();
+            const password = document.getElementById('loginPassword').value;
+            const submitBtn = e.target.querySelector('button[type="submit"]');
+            const originalText = 'Войти';
+
+            showLoading(submitBtn, true, originalText);
+
+            try {
+                const email = username + EMAIL_DOMAIN;
+                const { data, error } = await sb.auth.signInWithPassword({ email, password });
+
+                if (error) throw error;
+
+                currentUser = data.user;
+                await loadCurrentManager();
+                showApp();
+                showToast('Вход выполнен успешно');
+            } catch (error) {
+                console.error('Login error:', error);
+                showToast('Неверный логин или пароль', 'error');
+                showLoading(submitBtn, false, originalText);
+            }
+        }
+
+        async function register(e) {
+            e.preventDefault();
+            const username = document.getElementById('registerUsername').value.trim();
+            const password = document.getElementById('registerPassword').value;
+            const passwordConfirm = document.getElementById('registerPasswordConfirm').value;
+            const submitBtn = e.target.querySelector('button[type="submit"]');
+            const originalText = 'Зарегистрироваться';
+
+            if (password !== passwordConfirm) {
+                showToast('Пароли не совпадают', 'error');
+                return;
+            }
+
+            if (password.length < 6) {
+                showToast('Пароль должен быть не менее 6 символов', 'error');
+                return;
+            }
+
+            if (username.length < 3) {
+                showToast('Логин должен быть не менее 3 символов', 'error');
+                return;
+            }
+
+            showLoading(submitBtn, true, originalText);
+
+            try {
+                const email = username + EMAIL_DOMAIN;
+                
+                const { data: authData, error: authError } = await sb.auth.signUp({
+                    email,
+                    password,
+                    options: { data: { login: username } }
+                });
+
+                if (authError) throw authError;
+
+                if (!authData.user) {
+                    throw new Error('Не удалось создать пользователя');
+                }
+
+                const { error: managerError } = await sb
+                    .from('managers')
+                    .insert({
+                        login: username,
+                        supabase_user_id: authData.user.id
+                    });
+
+                if (managerError) throw managerError;
+
+                currentUser = authData.user;
+                await loadCurrentManager();
+                showApp();
+                showToast('Регистрация прошла успешно');
+            } catch (error) {
+                console.error('Register error:', error);
+                if (error.message.includes('already registered') || error.code === '23505') {
+                    showToast('Этот логин уже занят', 'error');
+                } else {
+                    showToast('Ошибка регистрации: ' + error.message, 'error');
+                }
+                showLoading(submitBtn, false, originalText);
+            }
+        }
+
+        async function logout() {
+            try {
+                await sb.auth.signOut();
+            } catch (error) {
+                console.error('Logout error:', error);
+            }
+            currentUser = null;
+            currentManager = null;
+            orders = [];
+            showAuth();
+            showToast('Вы вышли из системы');
+        }
+
+        // ===== РАБОТА С МЕНЕДЖЕРАМИ И ЗАКАЗАМИ =====
+
+        async function loadCurrentManager() {
+            const { data, error } = await sb
+                .from('managers')
+                .select('*')
+                .eq('supabase_user_id', currentUser.id)
+                .single();
+
+            if (error) {
+                console.error('Error loading manager:', error);
+                throw error;
+            }
+
+            currentManager = data;
+        }
+
+        async function loadOrders() {
+            if (!currentManager) return;
+
+            try {
+                const { data, error } = await sb
+                    .from('orders')
+                    .select('*')
+                    .eq('manager_id', currentManager.id)
+                    .order('created_at', { ascending: false });
+
+                if (error) throw error;
+
+                orders = data;
+                renderOrders();
+            } catch (error) {
+                console.error('Error loading orders:', error);
+                showToast('Ошибка загрузки заказов', 'error');
+            }
+        }
+
+        function renderOrders() {
+            const grid = document.getElementById('ordersGrid');
+            
+            let filteredOrders = orders;
+            if (currentFilter !== 'all') {
+                filteredOrders = orders.filter(order => order.status === currentFilter);
+            }
+
+            if (filteredOrders.length === 0) {
+                grid.innerHTML = `
+                    <div class="empty-state" style="grid-column: 1 / -1;">
+                        <div class="empty-state-icon">📦</div>
+                        <div class="empty-state-text">Заказов пока нет</div>
+                        <div class="empty-state-subtext">Создайте свой первый заказ</div>
+                    </div>
+                `;
+                return;
+            }
+
+            grid.innerHTML = filteredOrders.map(order => {
+                const statusClass = order.status === 'contacted' ? 'status-contacted' : 'status-not-contacted';
+                const statusText = order.status === 'contacted' ? 'Связался' : 'Не связался';
+                const deliveryDate = order.delivery_date ? new Date(order.delivery_date).toLocaleDateString('ru-RU') : 'Не указана';
+
+                return `
+                    <div class="order-card" data-order-id="${order.id}">
+                        <div class="order-header">
+                            <div class="order-number">Заказ #${order.order_number}</div>
+                            <div class="order-status ${statusClass}">${statusText}</div>
+                        </div>
+                        <div class="order-details">
+                            <div class="order-detail">
+                                <span class="order-detail-label">Клиент:</span>
+                                <span class="order-detail-value">${order.client_name}</span>
+                            </div>
+                            ${order.client_phone ? `
+                                <div class="order-detail">
+                                    <span class="order-detail-label">Телефон:</span>
+                                    <span class="order-detail-value">${order.client_phone}</span>
+                                </div>
+                            ` : ''}
+                            <div class="order-detail">
+                                <span class="order-detail-label">Дата поставки:</span>
+                                <span class="order-detail-value">${deliveryDate}</span>
+                            </div>
+                            <div class="order-detail">
+                                <span class="order-detail-label">Создан:</span>
+                                <span class="order-detail-value">${new Date(order.created_at).toLocaleDateString('ru-RU')}</span>
+                            </div>
+                        </div>
+                        <div class="order-actions">
+                            <button class="btn btn-secondary btn-sm edit-order-btn">✏️ Редактировать</button>
+                            <button class="btn btn-secondary btn-sm toggle-status-btn">
+                                ${order.status === 'contacted' ? '⏮ Не связался' : '✓ Связался'}
+                            </button>
+                            <button class="btn btn-danger btn-sm delete-order-btn">🗑</button>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+            // Добавляем обработчики для кнопок заказов
+            document.querySelectorAll('.edit-order-btn').forEach((btn, index) => {
+                btn.addEventListener('click', () => editOrder(filteredOrders[index].id));
+            });
+            document.querySelectorAll('.toggle-status-btn').forEach((btn, index) => {
+                btn.addEventListener('click', () => toggleOrderStatus(filteredOrders[index].id, filteredOrders[index].status));
+            });
+            document.querySelectorAll('.delete-order-btn').forEach((btn, index) => {
+                btn.addEventListener('click', () => deleteOrder(filteredOrders[index].id));
+            });
+        }
+
+        // ===== МОДАЛЬНЫЕ ОКНА =====
+
+        function openCreateOrderModal() {
+            document.getElementById('orderModalTitle').textContent = 'Создать заказ';
+            document.getElementById('orderSubmitText').textContent = 'Создать заказ';
+            document.getElementById('orderForm').reset();
+            document.getElementById('orderId').value = '';
+            document.getElementById('orderModal').classList.add('active');
+        }
+
+        function editOrder(orderId) {
+            const order = orders.find(o => o.id === orderId);
+            if (!order) return;
+
+            document.getElementById('orderModalTitle').textContent = 'Редактировать заказ';
+            document.getElementById('orderSubmitText').textContent = 'Сохранить изменения';
+            document.getElementById('orderId').value = order.id;
+            document.getElementById('orderNumber').value = order.order_number;
+            document.getElementById('clientName').value = order.client_name;
+            document.getElementById('clientPhone').value = order.client_phone || '';
+            document.getElementById('deliveryDate').value = order.delivery_date || '';
+            document.getElementById('orderStatus').value = order.status;
+            document.getElementById('orderModal').classList.add('active');
+        }
+
+        function closeOrderModal() {
+            document.getElementById('orderModal').classList.remove('active');
+        }
+
+        async function saveOrder(e) {
+            e.preventDefault();
+            const orderId = document.getElementById('orderId').value;
+            const orderData = {
+                order_number: document.getElementById('orderNumber').value,
+                client_name: document.getElementById('clientName').value,
+                client_phone: document.getElementById('clientPhone').value || null,
+                delivery_date: document.getElementById('deliveryDate').value || null,
+                status: document.getElementById('orderStatus').value,
+                manager_id: currentManager.id
+            };
+
+            const submitBtn = e.target.querySelector('button[type="submit"]');
+            const originalText = orderId ? 'Сохранить изменения' : 'Создать заказ';
+            showLoading(submitBtn, true, originalText);
+
+            try {
+                if (orderId) {
+                    const { error } = await sb
+                        .from('orders')
+                        .update(orderData)
+                        .eq('id', orderId);
+
+                    if (error) throw error;
+                    showToast('Заказ обновлен');
+                } else {
+                    const { error } = await sb
+                        .from('orders')
+                        .insert(orderData);
+
+                    if (error) throw error;
+                    showToast('Заказ создан');
+                }
+
+                closeOrderModal();
+                await loadOrders();
+            } catch (error) {
+                console.error('Error saving order:', error);
+                showToast('Ошибка сохранения: ' + error.message, 'error');
+                showLoading(submitBtn, false, originalText);
+            }
+        }
+
+        async function toggleOrderStatus(orderId, currentStatus) {
+            const newStatus = currentStatus === 'contacted' ? 'not_contacted' : 'contacted';
+
+            try {
+                const { error } = await sb
+                    .from('orders')
+                    .update({ status: newStatus })
+                    .eq('id', orderId);
+
+                if (error) throw error;
+
+                showToast('Статус обновлен');
+                await loadOrders();
+            } catch (error) {
+                console.error('Error updating status:', error);
+                showToast('Ошибка обновления статуса', 'error');
+            }
+        }
+
+        async function deleteOrder(orderId) {
+            if (!confirm('Вы уверены, что хотите удалить этот заказ?')) return;
+
+            try {
+                const { error } = await sb
+                    .from('orders')
+                    .delete()
+                    .eq('id', orderId);
+
+                if (error) throw error;
+
+                showToast('Заказ удален');
+                await loadOrders();
+            } catch (error) {
+                console.error('Error deleting order:', error);
+                showToast('Ошибка удаления заказа', 'error');
+            }
+        }
+
+        function setFilter(filter) {
+            currentFilter = filter;
+            document.querySelectorAll('.filter-btn').forEach(btn => {
+                btn.classList.toggle('active', btn.dataset.filter === filter);
+            });
+            renderOrders();
+        }
+
+        function showAuth() {
+            document.getElementById('authContainer').style.display = 'flex';
+            document.getElementById('appContainer').style.display = 'none';
+        }
+
+        function showApp() {
+            document.getElementById('authContainer').style.display = 'none';
+            document.getElementById('appContainer').style.display = 'block';
+            document.getElementById('userLogin').textContent = currentManager.login;
+            loadOrders();
+        }
+
+        // ===== ИНИЦИАЛИЗАЦИЯ =====
+
+        document.addEventListener('DOMContentLoaded', async () => {
+            // Обработчики форм
+            document.getElementById('loginForm').addEventListener('submit', login);
+            document.getElementById('registerForm').addEventListener('submit', register);
+            document.getElementById('authToggleLink').addEventListener('click', toggleAuthMode);
+            document.getElementById('orderForm').addEventListener('submit', saveOrder);
+            document.getElementById('logoutBtn').addEventListener('click', logout);
+            document.getElementById('createOrderBtn').addEventListener('click', openCreateOrderModal);
+            document.getElementById('closeModalBtn').addEventListener('click', closeOrderModal);
+
+            // Фильтры
+            document.querySelectorAll('.filter-btn').forEach(btn => {
+                btn.addEventListener('click', () => setFilter(btn.dataset.filter));
+            });
+
+            // Закрытие модалки по клику вне
+            document.getElementById('orderModal').addEventListener('click', (e) => {
+                if (e.target.id === 'orderModal') closeOrderModal();
+            });
+
+            // Проверка сессии
+            try {
+                const { data: { session } } = await sb.auth.getSession();
+                
+                if (session) {
+                    currentUser = session.user;
+                    await loadCurrentManager();
+                    showApp();
+                } else {
+                    showAuth();
+                }
+            } catch (error) {
+                console.error('Error checking session:', error);
+                showAuth();
+            }
+        });
+    </script>
+</body>
+</html>
